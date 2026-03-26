@@ -15,6 +15,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
 app.use(helmet());
+app.use(cors());
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
 
@@ -114,7 +115,6 @@ app.post('/create-checkout', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create checkout session.' });
   }
 });
-
 
 // 3. Stripe Webhook Placeholder (recommended for production order reconciliation)
 app.post('/stripe-webhook', (req, res) => {
