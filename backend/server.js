@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { OpenAI } = require('openai');
 const cors = require('cors');
+const helmet = require('helmet');
 
 if (!process.env.OPENAI_API_KEY || !process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required environment variables: OPENAI_API_KEY and STRIPE_SECRET_KEY');
@@ -13,7 +14,9 @@ const db = admin.firestore();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
+app.use(helmet());
 app.use(cors());
+app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/healthz', (_req, res) => {
@@ -111,6 +114,12 @@ app.post('/create-checkout', async (req, res) => {
     console.error('/create-checkout error:', error);
     return res.status(500).json({ error: 'Failed to create checkout session.' });
   }
+});
+
+// 3. Stripe Webhook Placeholder (recommended for production order reconciliation)
+app.post('/stripe-webhook', (req, res) => {
+  // TODO: verify Stripe signature and update order state in Firestore.
+  return res.status(501).json({ error: 'Webhook handler not implemented yet.' });
 });
 
 const port = process.env.PORT || 8080;
