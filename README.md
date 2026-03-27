@@ -46,6 +46,13 @@ Still required before production:
 ## 1) Backend (Cloud Run)
 
 ### Local run
+This repository is split into three parts:
+
+- `backend/`: Node.js + Express API for AI suggestions and Stripe Checkout.
+- `frontend/`: Flutter app with AI budget chat and checkout trigger.
+- `infra/`: Terraform for provisioning Cloud Run.
+
+## Backend (Cloud Run)
 
 ```bash
 cd backend
@@ -85,6 +92,23 @@ flutter build web --release --dart-define=BACKEND_BASE_URL=https://YOUR_CLOUD_RU
 Deploy `frontend/build/web` to Cloudflare Pages.
 
 ## 3) Infrastructure (Terraform)
+npm start
+```
+
+Required env vars:
+
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+
+## Frontend (Flutter)
+
+Pass Cloud Run URL at build time:
+
+```bash
+flutter build web --release --dart-define=BACKEND_BASE_URL=https://YOUR_RUN_URL
+```
+
+## Infrastructure (Terraform)
 
 ```bash
 cd infra

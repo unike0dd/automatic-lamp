@@ -35,14 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
     defaultValue: 'https://your-cloud-run-url.a.run.app',
   );
 
-  void _showMessage(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
   Future<void> askAI() async {
-    try {
-      final response = await http.post(
+    final response = await http.post(
       Uri.parse('$_backendBaseUrl/ai-chat'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -52,21 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
       }),
     );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        setState(() => aiResponse = jsonDecode(response.body)['answer'] as String);
-      } else {
-        setState(() => aiResponse = 'Unable to get AI suggestion right now.');
-      }
-    } catch (_) {
-      setState(() => aiResponse = 'Network error while contacting AI service.');
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      setState(() => aiResponse = jsonDecode(response.body)['answer'] as String);
+    } else {
+      setState(() => aiResponse = 'Unable to get AI suggestion right now.');
     }
   }
 
   Future<void> checkout() async {
-    try {
-      final response = await http.post(
+    final response = await http.post(
       Uri.parse('$_backendBaseUrl/create-checkout'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -76,15 +66,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }),
     );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final url = jsonDecode(response.body)['url'] as String;
-        final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
-        if (!launched) _showMessage('Could not open checkout URL.');
-      } else {
-        _showMessage('Checkout failed. Please try again.');
-      }
-    } catch (_) {
-      _showMessage('Network error while creating checkout.');
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final url = jsonDecode(response.body)['url'] as String;
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
 

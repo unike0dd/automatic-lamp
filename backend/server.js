@@ -15,11 +15,9 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
 app.use(helmet());
+app.use(cors());
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
-
-const isValidBusinessId = (value) => /^[a-zA-Z0-9-]{3,64}$/.test(String(value || ''));
-const parseBudget = (value) => Number(value);
 
 app.get('/healthz', (_req, res) => {
   res.status(200).json({ ok: true, service: 'cafeteria-backend' });
@@ -30,12 +28,8 @@ app.post('/ai-chat', async (req, res) => {
   try {
     const { query, budget, businessId } = req.body;
 
-    const numericBudget = parseBudget(budget);
-
-    if (!query || !Number.isFinite(numericBudget) || numericBudget < 0 || !isValidBusinessId(businessId)) {
-      return res.status(400).json({
-        error: 'query, numeric budget >= 0, and businessId (3-64 chars: letters, numbers, hyphen) are required.',
-      });
+    if (!query || !budget || !businessId) {
+      return res.status(400).json({ error: 'query, budget, and businessId are required.' });
     }
 
     // Fetch this specific cafeteria's menu
@@ -49,7 +43,7 @@ app.post('/ai-chat', async (req, res) => {
 
     const prompt = `You are the AI for "${businessId}" Cafeteria.
 Menu: ${JSON.stringify(menu)}.
-User Budget: $${numericBudget}.
+User Budget: $${budget}.
 Task: Suggest 2-3 items from the menu that fit the budget. Mention if subtotal + $2 delivery exceeds budget.
 User Question: "${query}"`;
 
@@ -99,6 +93,13 @@ app.post('/create-checkout', async (req, res) => {
     const storefrontHost = `${businessId}.web.app`;
 
     const lineItems = normalizedItems.map((item) => ({
+    if (!Array.isArray(cartItems) || cartItems.length === 0 || !businessId || !customerEmail) {
+      return res.status(400).json({
+        error: 'cartItems (non-empty array), businessId, and customerEmail are required.',
+      });
+    }
+
+    const lineItems = cartItems.map((item) => ({
       price_data: {
         currency: 'usd',
         product_data: { name: item.name },
@@ -125,8 +126,8 @@ app.post('/create-checkout', async (req, res) => {
       automatic_tax: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US'] },
       invoice_creation: { enabled: true },
-      success_url: `https://${storefrontHost}/success`,
-      cancel_url: `https://${storefrontHost}/cancel`,
+      success_url: `https://${businessId}.web.app/success`,
+      cancel_url: `https://${businessId}.web.app/cancel`,
       metadata: { businessId },
     });
 
@@ -137,10 +138,9 @@ app.post('/create-checkout', async (req, res) => {
   }
 });
 
-
 // 3. Stripe Webhook Placeholder (recommended for production order reconciliation)
 app.post('/stripe-webhook', (req, res) => {
-  // TODO: verify Stripe signature (raw body) and update order state in Firestore.
+  // TODO: verify Stripe signature and update order state in Firestore.
   return res.status(501).json({ error: 'Webhook handler not implemented yet.' });
 });
 
