@@ -70,8 +70,11 @@ User Question: "${query}"`;
 app.post('/create-checkout', async (req, res) => {
   try {
     const { cartItems, businessId, customerEmail } = req.body;
+    const hasValidCart = Array.isArray(cartItems) && cartItems.length > 0;
+    const hasBusinessId = typeof businessId === 'string' && businessId.trim().length > 0;
+    const hasCustomerEmail = typeof customerEmail === 'string' && customerEmail.trim().length > 0;
 
-    if (!Array.isArray(cartItems) || cartItems.length === 0 || !businessId || !customerEmail) {
+    if (!(hasValidCart && hasBusinessId && hasCustomerEmail)) {
       return res.status(400).json({
         error: 'cartItems (non-empty array), businessId, and customerEmail are required.',
       });
